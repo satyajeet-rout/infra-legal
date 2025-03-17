@@ -443,7 +443,7 @@ const Sidebar = ({
           ))}
         </nav>
 
-        <div className="p-2 mt-auto">
+        {/* <div className="p-2 mt-auto">
           <NavLink
             to="integrations"
             key="integration"
@@ -456,7 +456,7 @@ const Sidebar = ({
             />
             {isExpanded && <span className="ml-3 text-black">Integrations</span>}
           </NavLink>
-        </div>
+        </div> */}
 
         <div className="p-2 mt-auto">
           <button

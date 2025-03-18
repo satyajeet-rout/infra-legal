@@ -915,416 +915,362 @@ const FilingNumberSearchPage = ({ court }) => {
         </div>
       )}
 
-      {/* Case Details Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b p-4 sticky top-0 bg-white z-10">
-              <h3 className="text-lg font-semibold">Case Details</h3>
-              <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="p-4">
-              {loadingDetails ? (
-                <div className="flex justify-center items-center py-20">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="flex justify-between items-center border-b p-4 sticky top-0 bg-white z-10">
+        <h3 className="text-lg font-semibold">Case Details</h3>
+        <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
+          <X size={20} />
+        </button>
+      </div>
+      <div className="p-4">
+        {loadingDetails ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+          </div>
+        ) : detailsError ? (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 mr-3 flex-shrink-0 text-red-600" />
+              <div className="flex-1 text-red-700">
+                <p className="font-medium">{detailsError}</p>
+                {detailsError.includes("403") && (
+                  <p className="mt-1 text-sm">This could be due to an expired session or authentication issue.</p>
+                )}
+                <div className="mt-3">
+                  <button 
+                    onClick={handleRetryDetails}
+                    className="bg-red-100 text-red-800 px-3 py-1 rounded-md text-sm hover:bg-red-200 transition-colors"
+                  >
+                    Retry
+                  </button>
                 </div>
-              ) : detailsError ? (
-                <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                  <div className="flex items-start">
-                    <AlertTriangle className="h-5 w-5 mr-3 flex-shrink-0 text-red-600" />
-                    <div className="flex-1 text-red-700">
-                      <p className="font-medium">{detailsError}</p>
-                      {detailsError.includes("403") && (
-                        <p className="mt-1 text-sm">This could be due to an expired session or authentication issue.</p>
-                      )}
-                      <div className="mt-3">
-                        <button 
-                          onClick={handleRetryDetails}
-                          className="bg-red-100 text-red-800 px-3 py-1 rounded-md text-sm hover:bg-red-200 transition-colors"
-                        >
-                          Retry
-                        </button>
+              </div>
+            </div>
+          </div>
+        ) : caseDetails ? (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-2">{`${caseDetails.filing?.number ?? 'N/A'} - ${caseDetails.parties?.petitioners?.[0] ?? 'N/A'} vs. ${caseDetails.parties?.respondents?.[0] ?? 'N/A'}`}</h2>
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-black text-sm font-medium">CNR: {caseDetails.cnr}</span>
+                <span className="text-black text-sm mx-2 font-medium">|</span>
+                <span className="text-black text-sm font-medium">Filed: {formatDate(caseDetails.filing?.date)}</span>
+                <span className="text-black text-sm mx-2 font-medium">|</span>
+                <StatusBadge status={caseDetails.status?.caseStage || 'PENDING'} />
+              </div>
+            </div>
+            <div className="border-b mb-4">
+              <div className="flex overflow-x-auto">
+                {['overview', 'parties', 'history', 'acts', 'subMatters', 'ia', 'documents', 'objections', ...(caseDetails.orders?.length ? ['orders'] : [])].map((tab) => (
+                  <button
+                    key={tab}
+                    className={`px-4 py-2 font-medium text-sm whitespace-nowrap ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mb-4">
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { label: 'Filing Number', value: caseDetails.filing?.number ?? 'N/A' },
+                      { label: 'Filing Date', value: formatDate(caseDetails.filing?.date) },
+                      { label: 'Registration Number', value: caseDetails.registration?.number ?? 'N/A' },
+                      { label: 'Registration Date', value: formatDate(caseDetails.registration?.date) },
+                    ].map((item, index) => (
+                      <div key={index}>
+                        <h3 className="text-sm font-medium text-gray-500 mb-1">{item.label}</h3>
+                        <p className="text-sm">{item.value}</p>
                       </div>
+                    ))}
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-2">Category Information</h3>
+                    <div className="grid grid-cols-1 gap-4 bg-gray-50 p-4 rounded-md">
+                      {[
+                        { label: 'Category', value: caseDetails.categoryDetails?.category || 'N/A' },
+                        { label: 'Sub Category', value: caseDetails.categoryDetails?.subCategory },
+                        { label: 'Sub-Sub Category', value: caseDetails.categoryDetails?.subSubCategory },
+                      ].map((item, index) => item.value && (
+                        <div key={index}>
+                          <p className="text-sm text-gray-500">{item.label}</p>
+                          <p className="text-sm">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-2">Status Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
+                      {[
+                        { label: 'Case Stage', value: caseDetails.status?.caseStage || 'N/A' },
+                        { label: 'First Hearing Date', value: formatDate(caseDetails.status?.firstHearingDate) },
+                        { label: 'Next Hearing Date', value: formatDate(caseDetails.status?.nextHearingDate) },
+                        { label: 'Decision Date', value: formatDate(caseDetails.status?.decisionDate) },
+                        { label: 'Nature of Disposal', value: caseDetails.status?.natureOfDisposal },
+                        { label: 'Court and Judge', value: caseDetails.status?.courtNumberAndJudge || 'N/A' },
+                      ].map((item, index) => item.value && (
+                        <div key={index}>
+                          <p className="text-sm text-gray-500">{item.label}</p>
+                          <p className="text-sm">{item.value}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              ) : caseDetails ? (
-                <div>
-                  {/* Case Title & CNR */}
-                  <div className="mb-6">
-                    <h2 className="text-xl font-bold mb-2">
-                      {caseDetails.title || caseDetails.caseNumber || "Case Details"}
-                    </h2>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <span className="text-black text-sm font-medium">CNR: {caseDetails.cnr || 'N/A'}</span>
-                      {caseDetails.filing && (
-                        <>
-                          <span className="text-black text-sm mx-2 font-medium">|</span>
-                          <span className="text-black text-sm font-medium">
-                            Filing Number: {caseDetails.filing.number || 'N/A'}/{caseDetails.filing.year || 'N/A'}
-                          </span>
-                        </>
-                      )}
-                      {caseDetails.status && (
-                        <>
-                          <span className="text-black text-sm mx-2 font-medium">|</span>
-                          <StatusBadge status={caseDetails.status.stage || 'PENDING'} />
-                        </>
+              )}
+              
+              {activeTab === 'parties' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-medium mb-2">Petitioners</h3>
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      {caseDetails.parties?.petitioners?.length > 0 ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {caseDetails.parties.petitioners.map((petitioner, index) => (
+                            <li key={index} className="text-sm">{petitioner}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">No petitioners found</p>
                       )}
                     </div>
                   </div>
                   
-                  {/* Add your tabs and content here based on the original code */}
-                  {/* This should include all the case detail content from your existing component */}
+                  <div>
+                    <h3 className="font-medium mb-2">Respondents</h3>
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      {caseDetails.parties?.respondents?.length > 0 ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {caseDetails.parties.respondents.map((respondent, index) => (
+                            <li key={index} className="text-sm">{respondent}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">No respondents found</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium mb-2">Petitioner Advocates</h3>
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      {caseDetails.parties?.petitionerAdvocates?.length > 0 ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {caseDetails.parties.petitionerAdvocates.map((advocate, index) => (
+                            <li key={index} className="text-sm">{advocate}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">No petitioner advocates found</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium mb-2">Respondent Advocates</h3>
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      {caseDetails.parties?.respondentAdvocates?.length > 0 ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {caseDetails.parties.respondentAdvocates.map((advocate, index) => (
+                            <li key={index} className="text-sm">{advocate}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">No respondent advocates found</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-yellow-700">
-                  No case details available.
+              )}
+              
+              {activeTab === 'history' && (
+                <div>
+                  <h3 className="font-medium mb-2">Case History</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    {caseDetails.history?.length > 0 ? (
+                      <div className="space-y-4">
+                        {caseDetails.history.map((item, index) => (
+                          <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
+                            <p className="text-sm"><span className="font-medium">Date:</span> {formatDate(item.date)}</p>
+                            <p className="text-sm"><span className="font-medium">Action:</span> {item.action}</p>
+                            {item.description && <p className="text-sm"><span className="font-medium">Description:</span> {item.description}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No history records found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {activeTab === 'acts' && (
+                <div>
+                  <h3 className="font-medium mb-2">Acts</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    {Array.isArray(caseDetails.acts) && caseDetails.acts.length > 0 ? (
+                      <div className="space-y-2">
+                        {caseDetails.acts.map((actItem, index) => {
+                          // Handle different formats of act data
+                          if (typeof actItem === 'string') {
+                            return <p key={index} className="text-sm">{actItem}</p>;
+                          } else if (actItem && typeof actItem === 'object') {
+                            // For object with act and section properties
+                            return (
+                              <div key={index} className="pb-2">
+                                <p className="text-sm font-medium">{actItem.act || 'Unnamed Act'}</p>
+                                {actItem.section && (
+                                  <p className="text-sm text-gray-700">Section: {actItem.section}</p>
+                                )}
+                              </div>
+                            );
+                          } else {
+                            return <p key={index} className="text-sm">Unknown Act Format</p>;
+                          }
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No acts found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {activeTab === 'subMatters' && (
+                <div>
+                  <h3 className="font-medium mb-2">Sub Matters</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    {caseDetails.subMatters?.length > 0 ? (
+                      <ul className="list-disc list-inside space-y-1">
+                        {caseDetails.subMatters.map((matter, index) => (
+                          <li key={index} className="text-sm">{matter}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-500">No sub matters found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {activeTab === 'ia' && (
+                <div>
+                  <h3 className="font-medium mb-2">Interlocutory Applications</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    {caseDetails.iaDetails?.length > 0 ? (
+                      <div className="space-y-4">
+                        {caseDetails.iaDetails.map((ia, index) => (
+                          <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
+                            <p className="text-sm"><span className="font-medium">IA Number:</span> {ia.number}</p>
+                            <p className="text-sm"><span className="font-medium">Date:</span> {formatDate(ia.date)}</p>
+                            <p className="text-sm"><span className="font-medium">Type:</span> {ia.type}</p>
+                            {ia.status && <p className="text-sm"><span className="font-medium">Status:</span> {ia.status}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No interlocutory applications found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {activeTab === 'documents' && (
+                <div>
+                  <h3 className="font-medium mb-2">Documents</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    {caseDetails.documentDetails?.length > 0 ? (
+                      <div className="space-y-4">
+                        {caseDetails.documentDetails.map((doc, index) => (
+                          <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
+                            <p className="text-sm"><span className="font-medium">Document Type:</span> {doc.type}</p>
+                            <p className="text-sm"><span className="font-medium">Filed By:</span> {doc.filedBy}</p>
+                            <p className="text-sm"><span className="font-medium">Filing Date:</span> {formatDate(doc.filingDate)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No documents found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {activeTab === 'objections' && (
+                <div>
+                  <h3 className="font-medium mb-2">Objections</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    {caseDetails.objections?.length > 0 ? (
+                      <div className="space-y-4">
+                        {caseDetails.objections.map((obj, index) => (
+                          <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
+                            <p className="text-sm"><span className="font-medium">Date:</span> {formatDate(obj.date)}</p>
+                            <p className="text-sm"><span className="font-medium">Description:</span> {obj.description}</p>
+                            <p className="text-sm"><span className="font-medium">Status:</span> {obj.status}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No objections found</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {activeTab === 'orders' && (
+                <div>
+                  <h3 className="font-medium mb-2">Orders</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    {caseDetails.orders?.length > 0 ? (
+                      <div className="space-y-4">
+                        {caseDetails.orders.map((order, index) => (
+                          <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-sm"><span className="font-medium">Order #{order.number}</span></p>
+                                <p className="text-sm"><span className="font-medium">Date:</span> {formatDate(order.date)}</p>
+                              </div>
+                              <a 
+                                href={order.orderURL} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm hover:bg-blue-200 transition-colors"
+                              >
+                                {order.name}
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No orders found</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-            
-            <div className="border-t p-4 flex justify-end">
-              <button 
-                onClick={closeModal} 
-                className="bg-gray-100 text-gray-600 hover:bg-gray-200 px-4 py-2 rounded-md transition-colors"
-              >
-                Close
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-
-            {hasResponse && results.length === 0 && (
-        <div className="mt-6">
-          {/* <h2 className="text-xl font-semibold text-gray-800 mb-4">Search Results</h2> */}
-          <p className="text-gray-500">No results found for the given search criteria.</p>
-        </div>
-      )}
-    {/* Case Details Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b p-4 sticky top-0 bg-white z-10">
-              <h3 className="text-lg font-semibold">Case Details</h3>
-              <button onClick={closeModal} className="text-gray-500 hover:text-gray-700">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4">
-              {loadingDetails ? (
-                <div className="flex justify-center items-center py-20">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
-                </div>
-              ) : detailsError ? (
-                <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-700">{detailsError}</div>
-              ) : caseDetails ? (
-                <div>
-                  <div className="mb-6">
-                    <h2 className="text-xl font-bold mb-2">{`${caseDetails.filing?.number ?? 'N/A'} - ${caseDetails.parties?.petitioners?.[0] ?? 'N/A'} vs. ${caseDetails.parties?.respondents?.[0] ?? 'N/A'}`}</h2>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <span className="text-black text-sm font-medium">CNR: {caseDetails.cnr}</span>
-                      <span className="text-black text-sm mx-2 font-medium">|</span>
-                      <span className="text-black text-sm font-medium">Filed: {formatDate(caseDetails.filing?.date)}</span>
-                      <span className="text-black text-sm mx-2 font-medium">|</span>
-                      <StatusBadge status={caseDetails.status?.caseStage || 'PENDING'} />
-                    </div>
-                  </div>
-                  <div className="border-b mb-4">
-                    <div className="flex overflow-x-auto">
-                      {['overview', 'parties', 'history', 'acts', 'subMatters', 'ia', 'documents', 'objections', ...(caseDetails.orders?.length ? ['orders'] : [])].map((tab) => (
-                        <button
-                          key={tab}
-                          className={`px-4 py-2 font-medium text-sm whitespace-nowrap ${activeTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                          onClick={() => setActiveTab(tab)}
-                        >
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mb-4">
-                    {activeTab === 'overview' && (
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[
-                            { label: 'Filing Number', value: caseDetails.filing?.number ?? 'N/A' },
-                            { label: 'Filing Date', value: formatDate(caseDetails.filing?.date) },
-                            { label: 'Registration Number', value: caseDetails.registration?.number ?? 'N/A' },
-                            { label: 'Registration Date', value: formatDate(caseDetails.registration?.date) },
-                          ].map((item, index) => (
-                            <div key={index}>
-                              <h3 className="text-sm font-medium text-gray-500 mb-1">{item.label}</h3>
-                              <p className="text-sm">{item.value}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <div>
-                          <h3 className="font-medium mb-2">Category Information</h3>
-                          <div className="grid grid-cols-1 gap-4 bg-gray-50 p-4 rounded-md">
-                            {[
-                              { label: 'Category', value: caseDetails.categoryDetails?.category || 'N/A' },
-                              { label: 'Sub Category', value: caseDetails.categoryDetails?.subCategory },
-                              { label: 'Sub-Sub Category', value: caseDetails.categoryDetails?.subSubCategory },
-                            ].map((item, index) => item.value && (
-                              <div key={index}>
-                                <p className="text-sm text-gray-500">{item.label}</p>
-                                <p className="text-sm">{item.value}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-medium mb-2">Status Information</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-md">
-                            {[
-                              { label: 'Case Stage', value: caseDetails.status?.caseStage || 'N/A' },
-                              { label: 'First Hearing Date', value: formatDate(caseDetails.status?.firstHearingDate) },
-                              { label: 'Next Hearing Date', value: formatDate(caseDetails.status?.nextHearingDate) },
-                              { label: 'Decision Date', value: formatDate(caseDetails.status?.decisionDate) },
-                              { label: 'Nature of Disposal', value: caseDetails.status?.natureOfDisposal },
-                              { label: 'Court and Judge', value: caseDetails.status?.courtNumberAndJudge || 'N/A' },
-                            ].map((item, index) => item.value && (
-                              <div key={index}>
-                                <p className="text-sm text-gray-500">{item.label}</p>
-                                <p className="text-sm">{item.value}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'parties' && (
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="font-medium mb-2">Petitioners</h3>
-                          <div className="bg-gray-50 p-4 rounded-md">
-                            {caseDetails.parties?.petitioners?.length > 0 ? (
-                              <ul className="list-disc list-inside space-y-1">
-                                {caseDetails.parties.petitioners.map((petitioner, index) => (
-                                  <li key={index} className="text-sm">{petitioner}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-gray-500">No petitioners found</p>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="font-medium mb-2">Respondents</h3>
-                          <div className="bg-gray-50 p-4 rounded-md">
-                            {caseDetails.parties?.respondents?.length > 0 ? (
-                              <ul className="list-disc list-inside space-y-1">
-                                {caseDetails.parties.respondents.map((respondent, index) => (
-                                  <li key={index} className="text-sm">{respondent}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-gray-500">No respondents found</p>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="font-medium mb-2">Petitioner Advocates</h3>
-                          <div className="bg-gray-50 p-4 rounded-md">
-                            {caseDetails.parties?.petitionerAdvocates?.length > 0 ? (
-                              <ul className="list-disc list-inside space-y-1">
-                                {caseDetails.parties.petitionerAdvocates.map((advocate, index) => (
-                                  <li key={index} className="text-sm">{advocate}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-gray-500">No petitioner advocates found</p>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h3 className="font-medium mb-2">Respondent Advocates</h3>
-                          <div className="bg-gray-50 p-4 rounded-md">
-                            {caseDetails.parties?.respondentAdvocates?.length > 0 ? (
-                              <ul className="list-disc list-inside space-y-1">
-                                {caseDetails.parties.respondentAdvocates.map((advocate, index) => (
-                                  <li key={index} className="text-sm">{advocate}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-gray-500">No respondent advocates found</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'history' && (
-                      <div>
-                        <h3 className="font-medium mb-2">Case History</h3>
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          {caseDetails.history?.length > 0 ? (
-                            <div className="space-y-4">
-                              {caseDetails.history.map((item, index) => (
-                                <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
-                                  <p className="text-sm"><span className="font-medium">Date:</span> {formatDate(item.date)}</p>
-                                  <p className="text-sm"><span className="font-medium">Action:</span> {item.action}</p>
-                                  {item.description && <p className="text-sm"><span className="font-medium">Description:</span> {item.description}</p>}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500">No history records found</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'acts' && (
-                      <div>
-                        <h3 className="font-medium mb-2">Acts</h3>
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          {caseDetails.acts?.length > 0 ? (
-                            <ul className="list-disc list-inside space-y-1">
-                              {caseDetails.acts.map((act, index) => (
-                                <li key={index} className="text-sm">{act}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-gray-500">No acts found</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'subMatters' && (
-                      <div>
-                        <h3 className="font-medium mb-2">Sub Matters</h3>
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          {caseDetails.subMatters?.length > 0 ? (
-                            <ul className="list-disc list-inside space-y-1">
-                              {caseDetails.subMatters.map((matter, index) => (
-                                <li key={index} className="text-sm">{matter}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-gray-500">No sub matters found</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'ia' && (
-                      <div>
-                        <h3 className="font-medium mb-2">Interlocutory Applications</h3>
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          {caseDetails.iaDetails?.length > 0 ? (
-                            <div className="space-y-4">
-                              {caseDetails.iaDetails.map((ia, index) => (
-                                <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
-                                  <p className="text-sm"><span className="font-medium">IA Number:</span> {ia.number}</p>
-                                  <p className="text-sm"><span className="font-medium">Date:</span> {formatDate(ia.date)}</p>
-                                  <p className="text-sm"><span className="font-medium">Type:</span> {ia.type}</p>
-                                  {ia.status && <p className="text-sm"><span className="font-medium">Status:</span> {ia.status}</p>}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500">No interlocutory applications found</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'documents' && (
-                      <div>
-                        <h3 className="font-medium mb-2">Documents</h3>
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          {caseDetails.documentDetails?.length > 0 ? (
-                            <div className="space-y-4">
-                              {caseDetails.documentDetails.map((doc, index) => (
-                                <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
-                                  <p className="text-sm"><span className="font-medium">Document Type:</span> {doc.type}</p>
-                                  <p className="text-sm"><span className="font-medium">Filed By:</span> {doc.filedBy}</p>
-                                  <p className="text-sm"><span className="font-medium">Filing Date:</span> {formatDate(doc.filingDate)}</p>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500">No documents found</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'objections' && (
-                      <div>
-                        <h3 className="font-medium mb-2">Objections</h3>
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          {caseDetails.objections?.length > 0 ? (
-                            <div className="space-y-4">
-                              {caseDetails.objections.map((obj, index) => (
-                                <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
-                                  <p className="text-sm"><span className="font-medium">Date:</span> {formatDate(obj.date)}</p>
-                                  <p className="text-sm"><span className="font-medium">Description:</span> {obj.description}</p>
-                                  <p className="text-sm"><span className="font-medium">Status:</span> {obj.status}</p>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500">No objections found</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'orders' && (
-                      <div>
-                        <h3 className="font-medium mb-2">Orders</h3>
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          {caseDetails.orders?.length > 0 ? (
-                            <div className="space-y-4">
-                              {caseDetails.orders.map((order, index) => (
-                                <div key={index} className="border-b pb-2 last:border-b-0 last:pb-0">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <p className="text-sm"><span className="font-medium">Order #{order.number}</span></p>
-                                      <p className="text-sm"><span className="font-medium">Date:</span> {formatDate(order.date)}</p>
-                                    </div>
-                                    <a 
-                                      href={order.orderURL} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer" 
-                                      className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm hover:bg-blue-200 transition-colors"
-                                    >
-                                      {order.name}
-                                    </a>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500">No orders found</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-            <div className="border-t p-4 flex justify-end">
-              <button onClick={closeModal} className="bg-gray-100 text-gray-600 hover:bg-gray-200 px-4 py-2 rounded-md transition-colors">
-                Close
-              </button>
-            </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-yellow-700">
+            No case details available.
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      <div className="border-t p-4 flex justify-end">
+        <button onClick={closeModal} className="bg-gray-100 text-gray-600 hover:bg-gray-200 px-4 py-2 rounded-md transition-colors">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
 };
